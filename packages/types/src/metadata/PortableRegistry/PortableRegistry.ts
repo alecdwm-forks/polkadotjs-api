@@ -677,10 +677,24 @@ export class PortableRegistry extends Struct implements ILookup {
 
       return parseInt(lookupId.replace('Lookup', ''), 10);
     } else if (isNumber(lookupId)) {
-      return lookupId;
+      //
+      // Upstream just returns `lookupId` here, but this id is then used
+      // to index the `this.types` array in this class.
+      //
+      // When decoding a `miniMetadata`, the index of each type in `this.types`
+      // doesn't correspond to the type id, because a lot of types have been filtered
+      // out from the array.
+      //
+      // So, here we will return the actual index of the type, by finding it based on the type's id.
+      //
+      // This way when this class (PortableRegistry) tries to find the type via
+      // `this.types[lookupId]`, it will actually find it instead of raising an error
+      // that no type exists at that index.
+      //
+      return this.types?.findIndex?.((t) => t.id.toNumber() === lookupId) ?? lookupId;
     }
 
-    return lookupId.toNumber();
+    return this.types?.findIndex?.((t) => t.id.toNumber() === lookupId.toNumber()) ?? lookupId.toNumber();
   }
 
   /** @internal Converts a type into a TypeDef for Codec usage */
